@@ -1,0 +1,16 @@
+# render.yaml — configuración para deploy automático en Render.com
+services:
+  - type: web
+    name: tallercontrol-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false   # Lo ingresas manualmente en el dashboard de Render
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: PORT
+        value: 3000
