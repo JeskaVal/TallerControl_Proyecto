@@ -8,7 +8,7 @@ const piezaSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  folio: { type: String, unique: true }, // REP-00001
+  folio: { type: String },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
   // Datos cliente
@@ -39,6 +39,9 @@ const orderSchema = new mongoose.Schema({
 
   fechaEntregaEstimada: { type: Date, default: null },
 }, { timestamps: true });
+
+// Índice único por usuario + folio (permite mismo folio en diferentes usuarios)
+orderSchema.index({ userId: 1, folio: 1 }, { unique: true });
 
 // Auto-generar folio antes de guardar
 orderSchema.pre('save', async function (next) {

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const inventorySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  codigo: { type: String, unique: true },
+  codigo: { type: String },
 
   categoria: { type: String, required: true },
   marca: { type: String, required: true },
@@ -14,15 +14,28 @@ const inventorySchema = new mongoose.Schema({
   precioVenta: { type: Number, required: true },
 
   cantidad: { type: Number, required: true, default: 0 },
-  stockBajo: { type: Number, default: 5 }, // umbral para alerta "Bajo stock"
+  stockBajo: { type: Number, default: 3 }, // umbral para alerta "Bajo stock"
 }, { timestamps: true });
 
+// Índice único por usuario + código (permite mismo código en diferentes usuarios)
+inventorySchema.index({ userId: 1, codigo: 1 }, { unique: true });
 // Auto-generar código
 inventorySchema.pre('save', async function (next) {
   if (this.isNew) {
-    const count = await mongoose.model('Inventory').countDocuments({ userId: this.userId });
-    const number = String(count + 100000 + 1).padStart(6, '0');
-    this.codigo = `COD${number}`;
+    const lastItem = await mongoose.model('Inventory')
+      .findOne({ userId: this.userId })
+      .sort({ codigo: -1 })
+      .select('codigo');
+
+    let nextNumber = 100001;
+    if (lastItem && lastItem.codigo) {
+      const lastNumber = parseInt(lastItem.codigo.replace('COD', ''), 10);
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
+    }
+
+    this.codigo = `COD${String(nextNumber)}`;
   }
   next();
 });
