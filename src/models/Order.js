@@ -43,9 +43,21 @@ const orderSchema = new mongoose.Schema({
 // Auto-generar folio antes de guardar
 orderSchema.pre('save', async function (next) {
   if (this.isNew) {
-    const count = await mongoose.model('Order').countDocuments({ userId: this.userId });
-    const number = String(count + 1).padStart(5, '0');
-    this.folio = `REP-${number}`;
+    // Busca la última orden del usuario ordenada por folio descendente
+    const lastOrder = await mongoose.model('Order')
+      .findOne({ userId: this.userId })
+      .sort({ folio: -1 })
+      .select('folio');
+
+    let nextNumber = 1;
+    if (lastOrder && lastOrder.folio) {
+      const lastNumber = parseInt(lastOrder.folio.replace('REP-', ''), 10);
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
+    }
+
+    this.folio = `REP-${String(nextNumber).padStart(5, '0')}`;
   }
   next();
 });
